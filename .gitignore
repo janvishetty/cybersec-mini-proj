@@ -1,0 +1,33 @@
+# --- Secrets & keys (NEVER commit) ---
+*.pem
+*.key
+.env
+*secret*
+*apikey*
+abuseipdb*.txt
+
+# --- Captured data (can be large / sensitive) ---
+*.json
+cowrie.json
+events.csv
+enriched.csv
+alerts.csv
+clusters.csv
+data/
+logs/
+
+# --- Python ---
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
