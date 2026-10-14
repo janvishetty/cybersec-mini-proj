@@ -4,7 +4,7 @@ A live SSH honeypot that captures real internet attacks, feeding a custom
 detection pipeline that parses, enriches, scores, and visualises them — mapped
 to the MITRE ATT&CK framework.
 
-Group security project (3 members). The honeypot runs on a public cloud VM and
+Group security project. The honeypot runs on a public cloud VM and
 is attacked by real bots within minutes of going live; everything downstream
 runs on the captured data, so the detection side can be developed and tested
 safely offline.
