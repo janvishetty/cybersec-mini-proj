@@ -1,0 +1,1909 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Honeypot Watch</title>
+<style>
+  :root{
+    --bg:#0a0e13; --panel:#121a23; --panel2:#0e151d; --fg:#e7eef6; --muted:#8795a6;
+    --line:#1e2a37; --grid:#182431; --accent:#2dd4bf; --accent-soft:rgba(45,212,191,.14);
+    --good:#2ecc71; --warn:#e0a81a; --crit:#ff5b4a; --info:#5a97f7; --land:#243546;
+    --c1:#2dd4bf; --c2:#5a97f7; --c3:#e0a81a;
+    --font:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font);line-height:1.45;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent)}
+  .wrap{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
+  /* top */
+  .top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .logo{width:36px;height:36px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+  .brand h1{margin:0;font-size:1.15rem;font-weight:600;letter-spacing:-.01em}
+  .brand .sub{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+  .sp{flex:1}
+  .pill{font-family:var(--mono);font-size:.72rem;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel);display:inline-flex;align-items:center;gap:7px}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 22%,transparent);animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  /* kpis */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+  .kpi .l{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+  .kpi .v{font-family:var(--mono);font-size:1.6rem;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+  .kpi .m{font-size:.72rem;color:var(--muted)}
+  .kpi.crit .v{color:var(--crit)}
+  /* tabs */
+  .tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+  .tab{font:inherit;font-size:.86rem;color:var(--muted);background:none;border:none;padding:9px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab:hover{color:var(--fg)}
+  .tab.on{color:var(--fg);border-bottom-color:var(--accent);font-weight:600}
+  .tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  /* cards */
+  .grid2{display:grid;grid-template-columns:1.6fr 1fr;gap:12px;margin-bottom:12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;min-width:0;display:flex;flex-direction:column}
+  .card .h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:13px 16px 0}
+  .card .t{font-size:.82rem;font-weight:600}
+  .card .hint{font-size:.7rem;color:var(--muted);font-family:var(--mono)}
+  .card .b{padding:12px 16px 16px;min-width:0}
+  /* map */
+  svg.map{width:100%;height:auto;display:block;background:var(--panel2);border-radius:9px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:9px;font-size:.72rem;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .lg{width:9px;height:9px;border-radius:50%}
+  /* bars */
+  .bars{display:flex;flex-direction:column;gap:8px}
+  .bar{display:grid;grid-template-columns:118px 1fr auto;align-items:center;gap:11px;font-size:.78rem}
+  .bar .n0{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar .tk{display:block;height:11px;background:var(--grid);border-radius:6px;overflow:hidden}
+  .bar .fl{display:block;height:100%;background:linear-gradient(90deg,var(--c2),var(--accent));border-radius:6px;box-shadow:0 0 10px rgba(45,212,191,.45);transition:width .5s cubic-bezier(.22,1,.36,1)}
+  .bar .n1{font-family:var(--mono);font-size:.76rem;color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .bar .n1 .pc{color:var(--muted);font-size:.68rem}
+  /* filters */
+  .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+  .chip{font:inherit;font-size:.76rem;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer}
+  .chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+  .chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .search{flex:1;min-width:160px;font:inherit;font-size:.82rem;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--fg)}
+  .search:focus{outline:none;border-color:var(--accent)}
+  /* table */
+  .tw{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.8rem;min-width:640px}
+  th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;user-select:none}
+  th:hover{color:var(--fg)}
+  th .ar{opacity:.5;font-size:.7rem}
+  td{padding:9px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:var(--panel2)}
+  .ipc{font-family:var(--mono);color:var(--fg)}
+  .badge{font-family:var(--mono);font-size:.64rem;padding:1px 6px;border-radius:5px;white-space:nowrap}
+  .b-flood{background:rgba(224,168,26,.16);color:var(--warn)}
+  .b-inter{background:rgba(90,151,247,.16);color:var(--info)}
+  .b-scan{background:var(--accent-soft);color:var(--accent)}
+  .b-anom{background:rgba(255,91,74,.16);color:var(--crit)}
+  .sc{font-family:var(--mono)}
+  .sc.hi{color:var(--crit);font-weight:600}
+  /* alerts */
+  .feed{display:flex;flex-direction:column}
+  .al{display:grid;grid-template-columns:4px 1fr auto;gap:3px 10px;padding:10px 4px;border-bottom:1px solid var(--line)}
+  .al .sev{grid-row:span 2;border-radius:2px}
+  .sev.critical{background:var(--crit)}.sev.warning{background:var(--warn)}.sev.info{background:var(--info)}
+  .al .ti{font-size:.82rem;font-weight:500}
+  .al .tm{font-family:var(--mono);font-size:.68rem;color:var(--muted);white-space:nowrap}
+  .al .de{grid-column:2/4;font-size:.73rem;color:var(--muted);font-family:var(--mono);overflow-wrap:anywhere}
+  .tag{font-family:var(--mono);font-size:.64rem;padding:1px 6px;border-radius:5px;background:var(--accent-soft);color:var(--accent)}
+  /* drawer */
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(420px,92vw);background:var(--panel);border-left:1px solid var(--line);box-shadow:-10px 0 40px rgba(0,0,0,.4);transform:translateX(100%);transition:transform .22s ease;z-index:50;overflow-y:auto;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px))}
+  .drawer.open{transform:translateX(0)}
+  .drawer h3{margin:0 0 2px;font-family:var(--mono);font-size:1.1rem}
+  .drawer .close{position:absolute;top:14px;right:16px;font:inherit;font-size:1.3rem;background:none;border:none;color:var(--muted);cursor:pointer;line-height:1}
+  .kv{display:grid;grid-template-columns:40% 60%;gap:7px 10px;margin-top:16px;font-size:.84rem}
+  .kv dt{color:var(--muted)}
+  .kv dd{margin:0;font-family:var(--mono);overflow-wrap:anywhere}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .22s;z-index:40}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .empty{padding:40px;text-align:center;color:var(--muted);font-size:.9rem}
+  [hidden]{display:none!important}
+  .foot{margin-top:24px;font-size:.72rem;color:var(--muted);text-align:center;font-family:var(--mono)}
+  @media(max-width:920px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="logo" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+    <div class="brand"><h1>Honeypot Watch</h1><div class="sub">cowrie · ssh · 20.204.17.231</div></div>
+    <div class="sp"></div>
+    <span class="pill"><span class="dot"></span>LIVE DATA</span>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-tab="overview" type="button">Overview</button>
+    <button class="tab" data-tab="attackers" type="button">Attackers</button>
+    <button class="tab" data-tab="alerts" type="button">Alerts</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <div class="grid2">
+      <div class="card">
+        <div class="h"><span class="t">Attack origins</span><span class="hint">click a pin for details</span></div>
+        <div class="b">
+          <svg class="map" id="map" viewBox="0 0 1000 480" role="img" aria-label="World map of attacker source locations"></svg>
+          <div class="legend">
+            <span><span class="lg" style="background:var(--warn)"></span>brute-forcer</span>
+            <span><span class="lg" style="background:var(--info)"></span>interactive intruder</span>
+            <span><span class="lg" style="background:var(--accent)"></span>scanner</span>
+            <span><span class="lg" style="background:var(--crit)"></span>honeypot</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="h"><span class="t">Top source countries</span><span class="hint">by connections</span></div>
+        <div class="b"><div class="bars" id="bars"></div></div>
+      </div>
+    </div>
+    <div class="grid3">
+      <div class="card"><div class="h"><span class="t">Attacks over time</span><span class="hint">hourly</span></div><div class="b"><svg class="map" id="chart" viewBox="0 0 400 150" style="background:none" role="img" aria-label="Attacks per hour"></svg></div></div>
+      <div class="card"><div class="h"><span class="t">MITRE ATT&amp;CK</span><span class="hint">alerts by technique</span></div><div class="b"><div class="bars" id="mitre"></div></div></div>
+      <div class="card"><div class="h"><span class="t">Top credentials</span><span class="hint">user / pass tried</span></div><div class="b"><div class="tw"><table style="min-width:0"><tbody id="creds"></tbody></table></div></div></div>
+    </div>
+  </section>
+
+  <!-- ATTACKERS -->
+  <section id="attackers" hidden>
+    <div class="filters">
+      <input class="search" id="asearch" type="search" placeholder="Search IP, country, ISP…" aria-label="Search attackers">
+      <button class="chip on" data-f="all" type="button">All</button>
+      <button class="chip" data-f="flood" type="button">Brute-forcers</button>
+      <button class="chip" data-f="inter" type="button">Interactive</button>
+      <button class="chip" data-f="scan" type="button">Scanners</button>
+      <button class="chip" data-f="anom" type="button">Anomalies</button>
+    </div>
+    <div class="card"><div class="b" style="padding-top:16px">
+      <div class="tw"><table id="atable">
+        <thead><tr>
+          <th data-s="src_ip">IP <span class="ar"></span></th>
+          <th data-s="country">Country <span class="ar"></span></th>
+          <th data-s="abuse_score">Abuse <span class="ar"></span></th>
+          <th data-s="n_connections">Conns <span class="ar"></span></th>
+          <th data-s="n_logins">Logins <span class="ar"></span></th>
+          <th data-s="n_commands">Cmds <span class="ar"></span></th>
+          <th data-s="cluster_name">Type <span class="ar"></span></th>
+          <th data-s="anomaly_score">Anomaly <span class="ar"></span></th>
+        </tr></thead>
+        <tbody id="abody"></tbody>
+      </table></div>
+      <div class="empty" id="aempty" hidden>No attackers match.</div>
+    </div></div>
+  </section>
+
+  <!-- ALERTS -->
+  <section id="alerts" hidden>
+    <div class="filters">
+      <input class="search" id="lsearch" type="search" placeholder="Search alerts by IP or detail…" aria-label="Search alerts">
+      <button class="chip on" data-lf="all" type="button">All</button>
+      <button class="chip" data-lf="critical" type="button">Critical</button>
+      <button class="chip" data-lf="warning" type="button">Warning</button>
+      <button class="chip" data-lf="info" type="button">Info</button>
+    </div>
+    <div class="card"><div class="b"><div class="feed" id="lfeed"></div><div class="empty" id="lempty" hidden>No alerts match.</div></div></div>
+  </section>
+
+  <div class="foot" id="foot">loading…</div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Attacker details">
+  <button class="close" id="dclose" aria-label="Close">×</button>
+  <div id="dbody"></div>
+</aside>
+
+<script id="__data__">window.FULLDATA={
+ "generated": "2026-10-14 07:31:57.616306+00:00",
+ "totals": {
+  "attacks": 2896,
+  "ips": 51,
+  "logins": 2834,
+  "alerts": 2961,
+  "countries": 23,
+  "anomalies": 8
+ },
+ "attackers": [
+  {
+   "src_ip": "109.160.32.119",
+   "country": "The Netherlands",
+   "country_code": "NL",
+   "city": "Amsterdam",
+   "lat": 52.3676,
+   "lon": 4.90414,
+   "isp": "TechTies Inc.",
+   "abuse_score": 100,
+   "total_reports": 3928,
+   "n_connections": 501,
+   "n_logins": 500,
+   "n_commands": 500,
+   "n_sessions": 501,
+   "cluster_name": "Brute-forcer (login flood)",
+   "anomaly_score": 0.619,
+   "is_anomaly": true
+  },
+  {
+   "src_ip": "109.160.32.30",
+   "country": "The Netherlands",
+   "country_code": "NL",
+   "city": "Amsterdam",
+   "lat": 52.3676,
+   "lon": 4.90414,
+   "isp": "TechTies Inc.",
+   "abuse_score": 100,
+   "total_reports": 3990,
+   "n_connections": 501,
+   "n_logins": 500,
+   "n_commands": 500,
+   "n_sessions": 501,
+   "cluster_name": "Brute-forcer (login flood)",
+   "anomaly_score": 0.639,
+   "is_anomaly": true
+  },
+  {
+   "src_ip": "109.160.32.35",
+   "country": "The Netherlands",
+   "country_code": "NL",
+   "city": "Amsterdam",
+   "lat": 52.3676,
+   "lon": 4.90414,
+   "isp": "TechTies Inc.",
+   "abuse_score": 100,
+   "total_reports": 3919,
+   "n_connections": 501,
+   "n_logins": 500,
+   "n_commands": 500,
+   "n_sessions": 501,
+   "cluster_name": "Brute-forcer (login flood)",
+   "anomaly_score": 0.655,
+   "is_anomaly": true
+  },
+  {
+   "src_ip": "109.160.32.43",
+   "country": "The Netherlands",
+   "country_code": "NL",
+   "city": "Amsterdam",
+   "lat": 52.3676,
+   "lon": 4.90414,
+   "isp": "TechTies Inc.",
+   "abuse_score": 100,
+   "total_reports": 4120,
+   "n_connections": 501,
+   "n_logins": 500,
+   "n_commands": 500,
+   "n_sessions": 501,
+   "cluster_name": "Brute-forcer (login flood)",
+   "anomaly_score": 0.631,
+   "is_anomaly": true
+  },
+  {
+   "src_ip": "109.160.32.164",
+   "country": "The Netherlands",
+   "country_code": "NL",
+   "city": "Amsterdam",
+   "lat": 52.3676,
+   "lon": 4.90414,
+   "isp": "TechTies Inc.",
+   "abuse_score": 100,
+   "total_reports": 1771,
+   "n_connections": 493,
+   "n_logins": 491,
+   "n_commands": 491,
+   "n_sessions": 493,
+   "cluster_name": "Brute-forcer (login flood)",
+   "anomaly_score": 0.756,
+   "is_anomaly": true
+  },
+  {
+   "src_ip": "47.236.228.211",
+   "country": "Singapore",
+   "country_code": "SG",
+   "city": "Singapore",
+   "lat": 1.35208,
+   "lon": 103.82,
+   "isp": "Alibaba (US) Technology Co., Ltd.",
+   "abuse_score": 100,
+   "total_reports": 370,
+   "n_connections": 204,
+   "n_logins": 202,
+   "n_commands": 198,
+   "n_sessions": 204,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.734,
+   "is_anomaly": true
+  },
+  {
+   "src_ip": "195.178.110.228",
+   "country": "Andorra",
+   "country_code": "AD",
+   "city": "Andorra la Vella",
+   "lat": 42.5063,
+   "lon": 1.52184,
+   "isp": "Techoff SRV Limited",
+   "abuse_score": 100,
+   "total_reports": 51388,
+   "n_connections": 56,
+   "n_logins": 55,
+   "n_commands": 162,
+   "n_sessions": 56,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.677,
+   "is_anomaly": true
+  },
+  {
+   "src_ip": "195.178.110.227",
+   "country": "Andorra",
+   "country_code": "AD",
+   "city": "Andorra la Vella",
+   "lat": 42.5063,
+   "lon": 1.52184,
+   "isp": "Techoff SRV Limited",
+   "abuse_score": 100,
+   "total_reports": 53483,
+   "n_connections": 22,
+   "n_logins": 21,
+   "n_commands": 57,
+   "n_sessions": 22,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.576,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "94.154.43.56",
+   "country": "The Netherlands",
+   "country_code": "NL",
+   "city": "Amsterdam",
+   "lat": 52.3716,
+   "lon": 4.8883,
+   "isp": "Storm Industries LLC",
+   "abuse_score": 100,
+   "total_reports": 20868,
+   "n_connections": 16,
+   "n_logins": 16,
+   "n_commands": 0,
+   "n_sessions": 16,
+   "cluster_name": "Scanner / prober (light touch)",
+   "anomaly_score": 0.585,
+   "is_anomaly": true
+  },
+  {
+   "src_ip": "80.94.92.179",
+   "country": "The Netherlands",
+   "country_code": "NL",
+   "city": "Amsterdam",
+   "lat": 52.3676,
+   "lon": 4.90414,
+   "isp": "Unmanaged LTD",
+   "abuse_score": 100,
+   "total_reports": 47730,
+   "n_connections": 13,
+   "n_logins": 12,
+   "n_commands": 33,
+   "n_sessions": 13,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.513,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "34.14.1.97",
+   "country": "Belgium",
+   "country_code": "BE",
+   "city": "Brussels",
+   "lat": 50.9009,
+   "lon": 4.4855,
+   "isp": "Google LLC",
+   "abuse_score": 100,
+   "total_reports": 130,
+   "n_connections": 10,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 10,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.395,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "94.154.43.234",
+   "country": "The Netherlands",
+   "country_code": "NL",
+   "city": "Amsterdam",
+   "lat": 52.3716,
+   "lon": 4.8883,
+   "isp": "Storm Industries LLC",
+   "abuse_score": 100,
+   "total_reports": 2466,
+   "n_connections": 8,
+   "n_logins": 4,
+   "n_commands": 0,
+   "n_sessions": 8,
+   "cluster_name": "Scanner / prober (light touch)",
+   "anomaly_score": 0.479,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "139.19.117.130",
+   "country": "Germany",
+   "country_code": "DE",
+   "city": "Saarbr\u00fccken",
+   "lat": 49.2712,
+   "lon": 7.0313,
+   "isp": "Verein zur Foerderung eines Deutschen Forschungsnetzes e.V.",
+   "abuse_score": 100,
+   "total_reports": 4875,
+   "n_connections": 6,
+   "n_logins": 12,
+   "n_commands": 0,
+   "n_sessions": 6,
+   "cluster_name": "Scanner / prober (light touch)",
+   "anomaly_score": 0.492,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "2.57.121.25",
+   "country": "United Kingdom",
+   "country_code": "GB",
+   "city": "Rushden",
+   "lat": 52.2999,
+   "lon": -0.613313,
+   "isp": "Unmanaged LTD",
+   "abuse_score": 100,
+   "total_reports": 77743,
+   "n_connections": 6,
+   "n_logins": 6,
+   "n_commands": 0,
+   "n_sessions": 6,
+   "cluster_name": "Scanner / prober (light touch)",
+   "anomaly_score": 0.49,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "2.57.121.112",
+   "country": "United Kingdom",
+   "country_code": "GB",
+   "city": "Rushden",
+   "lat": 52.2999,
+   "lon": -0.613313,
+   "isp": "Unmanaged LTD",
+   "abuse_score": 100,
+   "total_reports": 107631,
+   "n_connections": 5,
+   "n_logins": 5,
+   "n_commands": 0,
+   "n_sessions": 5,
+   "cluster_name": "Scanner / prober (light touch)",
+   "anomaly_score": 0.551,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "193.46.255.86",
+   "country": "United Kingdom",
+   "country_code": "GB",
+   "city": "Rushden",
+   "lat": 52.2999,
+   "lon": -0.613313,
+   "isp": "Unmanaged LTD",
+   "abuse_score": 100,
+   "total_reports": 85096,
+   "n_connections": 5,
+   "n_logins": 5,
+   "n_commands": 0,
+   "n_sessions": 5,
+   "cluster_name": "Scanner / prober (light touch)",
+   "anomaly_score": 0.51,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "186.152.227.13",
+   "country": "Argentina",
+   "country_code": "AR",
+   "city": "C\u00f3rdoba",
+   "lat": -31.4057,
+   "lon": -64.1849,
+   "isp": "Telecom Argentina S.A.",
+   "abuse_score": 100,
+   "total_reports": 161,
+   "n_connections": 2,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 2,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.356,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "24.198.102.50",
+   "country": "United States",
+   "country_code": "US",
+   "city": "Old Town",
+   "lat": 44.9342,
+   "lon": -68.6453,
+   "isp": "Charter Communications Inc",
+   "abuse_score": 100,
+   "total_reports": 49,
+   "n_connections": 2,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 2,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.34,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "46.200.79.73",
+   "country": "Ukraine",
+   "country_code": "UA",
+   "city": "Horokhiv",
+   "lat": 50.5022,
+   "lon": 24.7568,
+   "isp": "UKRTELECOM",
+   "abuse_score": 100,
+   "total_reports": 140,
+   "n_connections": 2,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 2,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.329,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "187.250.60.213",
+   "country": "Mexico",
+   "country_code": "MX",
+   "city": "Tijuana",
+   "lat": 32.4248,
+   "lon": -116.8983,
+   "isp": "Uninet S.A. de C.V.",
+   "abuse_score": 70,
+   "total_reports": 11,
+   "n_connections": 2,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 2,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.374,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "185.159.162.210",
+   "country": "Ukraine",
+   "country_code": "UA",
+   "city": "Mykolayiv",
+   "lat": 46.9674,
+   "lon": 32.0037,
+   "isp": "WildPark Co",
+   "abuse_score": 100,
+   "total_reports": 177,
+   "n_connections": 2,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 2,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.34,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "66.116.243.149",
+   "country": "India",
+   "country_code": "IN",
+   "city": "Mumbai",
+   "lat": 19.0748,
+   "lon": 72.8856,
+   "isp": "Oracle Corporation",
+   "abuse_score": 100,
+   "total_reports": 1585,
+   "n_connections": 2,
+   "n_logins": 1,
+   "n_commands": 1,
+   "n_sessions": 2,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.409,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "186.105.7.251",
+   "country": "Chile",
+   "country_code": "CL",
+   "city": "Santiago",
+   "lat": -33.4521,
+   "lon": -70.6536,
+   "isp": "TELEF\u00d3NICA CHILE S.A.",
+   "abuse_score": 4,
+   "total_reports": 1,
+   "n_connections": 2,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 2,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.414,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "170.84.173.17",
+   "country": "Paraguay",
+   "country_code": "PY",
+   "city": "Santa Rita",
+   "lat": -25.7919,
+   "lon": -55.0895,
+   "isp": "SOL TELECOMUNICACIONES S.A.",
+   "abuse_score": 49,
+   "total_reports": 10,
+   "n_connections": 2,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 2,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.372,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "72.27.134.127",
+   "country": "Jamaica",
+   "country_code": "JM",
+   "city": "Kingston",
+   "lat": 18.0028,
+   "lon": -76.7897,
+   "isp": "FLOW",
+   "abuse_score": 0,
+   "total_reports": 0,
+   "n_connections": 2,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 2,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.434,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "77.29.7.252",
+   "country": "North Macedonia",
+   "country_code": "MK",
+   "city": "Skopje",
+   "lat": 42.0022,
+   "lon": 21.4199,
+   "isp": "Makedonski Telekom AD-Skopje",
+   "abuse_score": 29,
+   "total_reports": 4,
+   "n_connections": 2,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 2,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.385,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "143.105.137.133",
+   "country": "Argentina",
+   "country_code": "AR",
+   "city": "Buenos Aires",
+   "lat": -34.6036,
+   "lon": -58.3815,
+   "isp": "Space Exploration Technologies Corporation",
+   "abuse_score": 51,
+   "total_reports": 14,
+   "n_connections": 2,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 2,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.366,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "88.228.223.209",
+   "country": "T\u00fcrkiye",
+   "country_code": "TR",
+   "city": "Nev\u015fehir",
+   "lat": 38.6103,
+   "lon": 34.674,
+   "isp": "Turk Telekomunikasyon A.S",
+   "abuse_score": 33,
+   "total_reports": 5,
+   "n_connections": 2,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 2,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.375,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "34.140.234.253",
+   "country": "Belgium",
+   "country_code": "BE",
+   "city": "Brussels",
+   "lat": 50.9009,
+   "lon": 4.4855,
+   "isp": "Google LLC",
+   "abuse_score": 100,
+   "total_reports": 110,
+   "n_connections": 2,
+   "n_logins": 1,
+   "n_commands": 0,
+   "n_sessions": 2,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.371,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "64.89.160.135",
+   "country": "Luxembourg",
+   "country_code": "LU",
+   "city": "Schieren",
+   "lat": 49.8153,
+   "lon": 6.12958,
+   "isp": "Netiface LLC",
+   "abuse_score": 100,
+   "total_reports": 6044,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.326,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "62.60.130.253",
+   "country": "Iran",
+   "country_code": "IR",
+   "city": "Tehran",
+   "lat": 35.6824,
+   "lon": 51.4158,
+   "isp": "Cipher Operations DOO Beograd - Novi Beograd",
+   "abuse_score": 100,
+   "total_reports": 137916,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.326,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "52.146.19.226",
+   "country": "United States",
+   "country_code": "US",
+   "city": "Boydton",
+   "lat": 36.677696,
+   "lon": -78.37471,
+   "isp": "Microsoft Corporation",
+   "abuse_score": 100,
+   "total_reports": 624,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.332,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "45.148.10.151",
+   "country": "The Netherlands",
+   "country_code": "NL",
+   "city": "Amsterdam",
+   "lat": 52.3716,
+   "lon": 4.8883,
+   "isp": "Techoff SRV Limited",
+   "abuse_score": 100,
+   "total_reports": 209512,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.326,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "47.84.3.195",
+   "country": "Singapore",
+   "country_code": "SG",
+   "city": "Singapore",
+   "lat": 1.35208,
+   "lon": 103.82,
+   "isp": "Alibaba.com LLC",
+   "abuse_score": 100,
+   "total_reports": 38,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.326,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "66.132.195.192",
+   "country": "United States",
+   "country_code": "US",
+   "city": "Ann Arbor",
+   "lat": 42.2809,
+   "lon": -83.7489,
+   "isp": "Censys, Inc.",
+   "abuse_score": 100,
+   "total_reports": 150,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.329,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "101.96.229.2",
+   "country": "China",
+   "country_code": "CN",
+   "city": "Haidian",
+   "lat": 39.9794,
+   "lon": 116.338,
+   "isp": "Beijing Volcano Engine Technology Co., Ltd.",
+   "abuse_score": 100,
+   "total_reports": 1612,
+   "n_connections": 1,
+   "n_logins": 1,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.379,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "205.210.31.219",
+   "country": "United States",
+   "country_code": "US",
+   "city": "Santa Clara",
+   "lat": 37.3835,
+   "lon": -121.983,
+   "isp": "Google LLC",
+   "abuse_score": 0,
+   "total_reports": 5939,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.394,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "198.235.24.139",
+   "country": "United States",
+   "country_code": "US",
+   "city": "Santa Clara",
+   "lat": 37.3834,
+   "lon": -121.983,
+   "isp": "Google LLC",
+   "abuse_score": 0,
+   "total_reports": 2175,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.394,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "196.177.50.121",
+   "country": "Tunisia",
+   "country_code": "TN",
+   "city": "Sousse",
+   "lat": 35.8251,
+   "lon": 10.6446,
+   "isp": "ooredoo TN",
+   "abuse_score": 25,
+   "total_reports": 3,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.36,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "103.244.189.103",
+   "country": "Myanmar",
+   "country_code": "MM",
+   "city": "Thin Gan Kyun Gyi",
+   "lat": 16.9573,
+   "lon": 96.1554,
+   "isp": "E R S TECHNOLOGY COMPANY LIMITED",
+   "abuse_score": 25,
+   "total_reports": 5,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.36,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "192.248.150.180",
+   "country": "United Kingdom",
+   "country_code": "GB",
+   "city": "Canary Wharf",
+   "lat": 51.5064,
+   "lon": -0.02,
+   "isp": "The Constant Company, LLC",
+   "abuse_score": 100,
+   "total_reports": 10361,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.326,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "188.163.75.141",
+   "country": "Ukraine",
+   "country_code": "UA",
+   "city": "Lviv",
+   "lat": 49.8396,
+   "lon": 24.0297,
+   "isp": "Kyivstar UA",
+   "abuse_score": 24,
+   "total_reports": 3,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.364,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "186.12.204.141",
+   "country": "Argentina",
+   "country_code": "AR",
+   "city": "Catamarca",
+   "lat": -28.4696,
+   "lon": -65.787,
+   "isp": "Techtel LMDS Comunicaciones Interactivas S.A.",
+   "abuse_score": 27,
+   "total_reports": 16,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.364,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "184.105.139.68",
+   "country": "United States",
+   "country_code": "US",
+   "city": "Dallas",
+   "lat": 32.8266,
+   "lon": -96.7888,
+   "isp": "Hurricane Electric LLC",
+   "abuse_score": 100,
+   "total_reports": 3103,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.326,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "147.185.133.222",
+   "country": "United States",
+   "country_code": "US",
+   "city": "Santa Clara",
+   "lat": 37.3834,
+   "lon": -121.983,
+   "isp": "Google LLC",
+   "abuse_score": 0,
+   "total_reports": 3554,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.414,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "147.185.132.13",
+   "country": "United States",
+   "country_code": "US",
+   "city": "Santa Clara",
+   "lat": 37.3834,
+   "lon": -121.983,
+   "isp": "Google LLC",
+   "abuse_score": 0,
+   "total_reports": 6254,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.429,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "138.197.101.95",
+   "country": "United States",
+   "country_code": "US",
+   "city": "Clifton",
+   "lat": 40.8364,
+   "lon": -74.1403,
+   "isp": "DigitalOcean, LLC",
+   "abuse_score": 100,
+   "total_reports": 170,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.329,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "128.24.226.106",
+   "country": "United States",
+   "country_code": "US",
+   "city": "Cheyenne",
+   "lat": 41.13925,
+   "lon": -104.816154,
+   "isp": "Microsoft Corporation",
+   "abuse_score": 0,
+   "total_reports": 0,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.394,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "115.140.161.61",
+   "country": "South Korea",
+   "country_code": "KR",
+   "city": "Changwon-si",
+   "lat": 35.2733,
+   "lon": 128.653,
+   "isp": "LG POWERCOMM",
+   "abuse_score": 100,
+   "total_reports": 4511,
+   "n_connections": 1,
+   "n_logins": 2,
+   "n_commands": 9,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.418,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "103.244.189.36",
+   "country": "Myanmar",
+   "country_code": "MM",
+   "city": "Thin Gan Kyun Gyi",
+   "lat": 16.9573,
+   "lon": 96.1554,
+   "isp": "E R S TECHNOLOGY COMPANY LIMITED",
+   "abuse_score": 17,
+   "total_reports": 6,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.377,
+   "is_anomaly": false
+  },
+  {
+   "src_ip": "95.86.40.116",
+   "country": "Kosovo",
+   "country_code": "XK",
+   "city": "Podujevo",
+   "lat": 42.9106,
+   "lon": 21.1931,
+   "isp": "TelKos L.L.C",
+   "abuse_score": 100,
+   "total_reports": 49,
+   "n_connections": 1,
+   "n_logins": 0,
+   "n_commands": 0,
+   "n_sessions": 1,
+   "cluster_name": "Interactive intruder (runs commands)",
+   "anomaly_score": 0.326,
+   "is_anomaly": false
+  }
+ ],
+ "alerts": [
+  {
+   "sev": "critical",
+   "rule": "brute_force",
+   "mitre": "T1110",
+   "mitre_name": "Brute Force",
+   "ip": "109.160.32.164",
+   "detail": "491 login attempts from ?",
+   "time": "10-14 07:31"
+  },
+  {
+   "sev": "warning",
+   "rule": "known_bad_ip",
+   "mitre": "T1595",
+   "mitre_name": "Active Scanning",
+   "ip": "109.160.32.164",
+   "detail": "AbuseIPDB score 100 (?)",
+   "time": "10-14 07:31"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:31"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:31"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:31"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:31"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:31"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:31"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:31"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:31"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:31"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:30"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:30"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:30"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:30"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:30"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:30"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:30"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:30"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:30"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:29"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:29"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:29"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:29"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:29"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:29"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:29"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:29"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:29"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:29"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:28"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:28"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:28"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:28"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:28"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:28"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:28"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:28"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:27"
+  },
+  {
+   "sev": "info",
+   "rule": "recon_command",
+   "mitre": "T1082",
+   "mitre_name": "System Information Discovery",
+   "ip": "109.160.32.164",
+   "detail": "cmd: uname -s -v -n -r -m",
+   "time": "10-14 07:27"
+  }
+ ],
+ "creds": [
+  {
+   "u": "admin",
+   "p": "admin",
+   "n": 10
+  },
+  {
+   "u": "root",
+   "p": "admin",
+   "n": 8
+  },
+  {
+   "u": "user",
+   "p": "1234",
+   "n": 8
+  },
+  {
+   "u": "root",
+   "p": "123456",
+   "n": 5
+  },
+  {
+   "u": "root",
+   "p": "123123",
+   "n": 4
+  },
+  {
+   "u": "root",
+   "p": "passw0rd",
+   "n": 4
+  },
+  {
+   "u": "root",
+   "p": "password",
+   "n": 4
+  },
+  {
+   "u": "root",
+   "p": "qwerty",
+   "n": 4
+  },
+  {
+   "u": "root",
+   "p": "root",
+   "n": 4
+  },
+  {
+   "u": "root",
+   "p": "P@ssw0rd",
+   "n": 4
+  },
+  {
+   "u": "root",
+   "p": "111111",
+   "n": 4
+  },
+  {
+   "u": "root",
+   "p": "Admin@123",
+   "n": 4
+  },
+  {
+   "u": "root",
+   "p": "12345678",
+   "n": 4
+  },
+  {
+   "u": "root",
+   "p": "12345",
+   "n": 4
+  },
+  {
+   "u": "root",
+   "p": "123456789",
+   "n": 4
+  }
+ ],
+ "timeline": [
+  {
+   "t": "2026-10-14 00:00:00+00:00",
+   "n": 361
+  },
+  {
+   "t": "2026-10-14 01:00:00+00:00",
+   "n": 298
+  },
+  {
+   "t": "2026-10-14 02:00:00+00:00",
+   "n": 548
+  },
+  {
+   "t": "2026-10-14 03:00:00+00:00",
+   "n": 356
+  },
+  {
+   "t": "2026-10-14 04:00:00+00:00",
+   "n": 547
+  },
+  {
+   "t": "2026-10-14 05:00:00+00:00",
+   "n": 244
+  },
+  {
+   "t": "2026-10-14 06:00:00+00:00",
+   "n": 212
+  },
+  {
+   "t": "2026-10-14 07:00:00+00:00",
+   "n": 330
+  }
+ ],
+ "countries": [
+  {
+   "name": "The Netherlands",
+   "n": 2535
+  },
+  {
+   "name": "Singapore",
+   "n": 205
+  },
+  {
+   "name": "Andorra",
+   "n": 78
+  },
+  {
+   "name": "United Kingdom",
+   "n": 17
+  },
+  {
+   "name": "Belgium",
+   "n": 12
+  },
+  {
+   "name": "United States",
+   "n": 11
+  },
+  {
+   "name": "Germany",
+   "n": 6
+  },
+  {
+   "name": "Argentina",
+   "n": 5
+  },
+  {
+   "name": "Ukraine",
+   "n": 5
+  },
+  {
+   "name": "Mexico",
+   "n": 2
+  },
+  {
+   "name": "India",
+   "n": 2
+  },
+  {
+   "name": "Chile",
+   "n": 2
+  },
+  {
+   "name": "Paraguay",
+   "n": 2
+  },
+  {
+   "name": "Jamaica",
+   "n": 2
+  },
+  {
+   "name": "North Macedonia",
+   "n": 2
+  },
+  {
+   "name": "T\u00fcrkiye",
+   "n": 2
+  },
+  {
+   "name": "Myanmar",
+   "n": 2
+  },
+  {
+   "name": "Luxembourg",
+   "n": 1
+  },
+  {
+   "name": "Iran",
+   "n": 1
+  },
+  {
+   "name": "China",
+   "n": 1
+  },
+  {
+   "name": "Tunisia",
+   "n": 1
+  },
+  {
+   "name": "South Korea",
+   "n": 1
+  },
+  {
+   "name": "Kosovo",
+   "n": 1
+  }
+ ],
+ "severity": {
+  "info": 2494,
+  "critical": 265,
+  "warning": 202
+ },
+ "mitre": [
+  {
+   "id": "T1082",
+   "name": "System Information Discovery",
+   "count": 2494
+  },
+  {
+   "id": "T1078",
+   "name": "Valid Accounts",
+   "count": 254
+  },
+  {
+   "id": "T1059",
+   "name": "Command and Scripting Interpreter",
+   "count": 168
+  },
+  {
+   "id": "T1595",
+   "name": "Active Scanning",
+   "count": 34
+  },
+  {
+   "id": "T1110",
+   "name": "Brute Force",
+   "count": 11
+  }
+ ]
+};</script>
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num=n=>Number(n||0).toLocaleString();
+let D=null, aSort={k:"n_connections",dir:-1}, aFilter="all", lFilter="all";
+
+const clusterClass=c=>/flood/i.test(c)?"flood":/interactive/i.test(c)?"inter":"scan";
+const clusterColor=c=>({flood:"var(--warn)",inter:"var(--info)",scan:"var(--accent)"})[clusterClass(c)];
+
+setTimeout(boot,0);
+function boot(){
+  D=window.FULLDATA;
+  if(!D){$("#foot").textContent="Data missing.";return;}
+  render();
+}
+
+function render(){
+  // kpis
+  const t=D.totals||{};
+  $("#kpis").innerHTML=[
+    ["Total attacks",num(t.attacks),"SSH connections",""],
+    ["Unique IPs",num(t.ips),(t.countries||0)+" countries",""],
+    ["Login attempts",num(t.logins),"credential tries",""],
+    ["Alerts fired",num(t.alerts),(D.severity?.critical||0)+" critical",""],
+    ["Anomalies",num(t.anomalies),"ML-flagged",crit="crit"],
+  ].map(k=>`<div class="kpi ${k[3]}"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="m">${k[2]}</div></div>`).join("");
+  drawMap(); drawBars(); drawChart(); drawMitre(); drawCreds();
+  renderAttackers(); renderAlerts();
+  $("#foot").textContent="Honeypot Watch · "+num(D.attackers.length)+" attackers · generated "+(D.generated||"").slice(0,16);
+}
+
+/* ---- map ---- */
+const CONT=[
+ [[-165,66],[-158,71],[-130,70],[-100,73],[-82,70],[-60,60],[-64,52],[-78,52],[-72,47],[-70,42],[-74,40],[-81,31],[-80,25],[-90,22],[-97,21],[-105,22],[-110,24],[-114,30],[-120,35],[-124,42],[-125,48],[-133,55],[-147,60]],
+ [[-78,8],[-72,11],[-62,10],[-50,5],[-44,-2],[-35,-8],[-39,-14],[-48,-25],[-58,-35],[-63,-41],[-66,-46],[-70,-52],[-74,-50],[-72,-42],[-71,-30],[-71,-18],[-76,-14],[-81,-6],[-80,2]],
+ [[-16,16],[-6,36],[10,37],[24,33],[32,31],[35,24],[43,12],[51,12],[48,2],[40,-5],[40,-16],[35,-24],[27,-34],[20,-35],[16,-29],[12,-17],[9,-1],[3,6],[-8,5]],
+ [[-10,37],[-9,44],[-2,49],[2,51],[-5,58],[5,62],[12,65],[25,71],[42,67],[40,58],[38,48],[28,45],[20,40],[12,38],[2,38]],
+ [[28,45],[40,48],[55,52],[70,55],[85,52],[100,53],[112,50],[122,53],[130,48],[142,46],[135,35],[122,30],[120,22],[110,20],[106,10],[100,6],[95,15],[90,22],[82,8],[77,8],[72,20],[66,25],[57,25],[48,30],[44,38],[36,36]],
+ [[114,-22],[122,-18],[130,-12],[137,-12],[143,-12],[146,-18],[150,-24],[153,-28],[150,-37],[143,-39],[135,-35],[129,-32],[120,-34],[115,-30]],
+];
+const PAD=20,MW=1000,MH=480;
+const proj=(la,lo)=>[PAD+(lo+180)/360*(MW-2*PAD), PAD+(90-la)/180*(MH-2*PAD)];
+function drawMap(){
+  let g=[];
+  CONT.forEach(poly=>{const d="M"+poly.map(([lo,la])=>{const[x,y]=proj(la,lo);return x.toFixed(1)+" "+y.toFixed(1);}).join(" L")+" Z";g.push(`<path d="${d}" fill="var(--land)" opacity="0.9"/>`);});
+  for(let lo=-150;lo<=150;lo+=30){const[x]=proj(0,lo);g.push(`<line x1="${x.toFixed(1)}" y1="${PAD}" x2="${x.toFixed(1)}" y2="${MH-PAD}" stroke="var(--grid)"/>`);}
+  for(let la=-60;la<=60;la+=30){const[,y]=proj(la,0);g.push(`<line x1="${PAD}" y1="${y.toFixed(1)}" x2="${MW-PAD}" y2="${y.toFixed(1)}" stroke="var(--grid)"/>`);}
+  const [hx,hy]=proj(18.5,73.8);
+  const pts=D.attackers.filter(a=>a.lat!=null&&a.lon!=null);
+  pts.forEach(a=>{const[sx,sy]=proj(a.lat,a.lon);const mx=(sx+hx)/2,my=(sy+hy)/2-Math.abs(sx-hx)*0.2-16;
+    g.push(`<path d="M${sx.toFixed(1)} ${sy.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${hx.toFixed(1)} ${hy.toFixed(1)}" fill="none" stroke="${clusterColor(a.cluster_name)}" stroke-width="1" stroke-opacity="0.35"/>`);});
+  pts.forEach(a=>{const[sx,sy]=proj(a.lat,a.lon);const r=3+Math.sqrt(a.n_connections||1)/3.2;const c=clusterColor(a.cluster_name);
+    g.push(`<circle class="pin" data-ip="${esc(a.src_ip)}" cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="${r.toFixed(1)}" fill="${c}" fill-opacity="0.85" stroke="var(--panel)" stroke-width="0.7" style="cursor:pointer"><title>${esc(a.src_ip)} — ${esc(a.country||"?")} — ${a.n_connections} conns</title></circle>`);});
+  g.push(`<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="10" fill="var(--crit)" opacity="0.18"><animate attributeName="r" from="6" to="16" dur="2.2s" repeatCount="indefinite"/><animate attributeName="opacity" from="0.3" to="0" dur="2.2s" repeatCount="indefinite"/></circle>`);
+  g.push(`<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="5" fill="var(--crit)" stroke="var(--panel)" stroke-width="1.5"><title>Honeypot — Central India</title></circle>`);
+  $("#map").innerHTML=g.join("");
+  $$("#map .pin").forEach(p=>p.addEventListener("click",()=>openDrawer(p.dataset.ip)));
+}
+function drawBars(){
+  const cs=(D.countries||[]).slice(0,8);
+  const total=(D.countries||[]).reduce((s,c)=>s+(c.n||0),0)||1;
+  const mx=Math.max(1,...cs.map(c=>c.n));
+  // square-root scale so the long tail stays visible; counts + share stay exact
+  $("#bars").innerHTML=cs.map(c=>{
+    const w=Math.max(5,Math.sqrt(c.n/mx)*100);
+    const pct=c.n/total*100, ps=pct<1?"<1%":pct.toFixed(0)+"%";
+    return `<div class="bar"><span class="n0" title="${esc(c.name)}">${esc(c.name)}</span><span class="tk"><span class="fl" style="width:${w.toFixed(1)}%"></span></span><span class="n1">${num(c.n)} <span class="pc">${ps}</span></span></div>`;
+  }).join("")||'<div class="empty">no geo</div>';
+}
+function drawChart(){
+  const d=(D.timeline||[]).map(x=>x.n); if(!d.length){$("#chart").innerHTML="";return;}
+  const W=400,H=150,L=26,R=8,T=10,B=20,mx=Math.max(...d)*1.15||1;
+  const sx=i=>L+i*(W-L-R)/Math.max(1,d.length-1), sy=v=>T+(1-v/mx)*(H-T-B);
+  const pts=d.map((v,i)=>`${sx(i).toFixed(1)},${sy(v).toFixed(1)}`);
+  let g=[`<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity="0.3"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>`];
+  for(let k=0;k<=2;k++){const v=mx*k/2,y=sy(v);g.push(`<line x1="${L}" y1="${y.toFixed(1)}" x2="${W-R}" y2="${y.toFixed(1)}" stroke="var(--grid)"/><text x="2" y="${(y+3).toFixed(1)}" font-family="IBM Plex Mono,monospace" font-size="8" fill="var(--muted)">${Math.round(v)}</text>`);}
+  g.push(`<path d="M${sx(0).toFixed(1)},${(H-B).toFixed(1)} L${pts.join(" L")} L${sx(d.length-1).toFixed(1)},${(H-B).toFixed(1)} Z" fill="url(#ag)"/>`);
+  g.push(`<path d="M${pts.join(" L")}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>`);
+  $("#chart").innerHTML=g.join("");
+}
+function drawMitre(){
+  const m=D.mitre||[]; const mx=Math.max(1,...m.map(x=>x.count));
+  $("#mitre").innerHTML=m.map(x=>`<div class="bar"><span class="n0" title="${esc(x.name)}">${esc(x.id)}</span><span class="tk"><span class="fl" style="width:${(x.count/mx*100).toFixed(1)}%;background:var(--c2)"></span></span><span class="n1">${num(x.count)}</span></div>`).join("");
+}
+function drawCreds(){
+  $("#creds").innerHTML=(D.creds||[]).slice(0,8).map(c=>`<tr><td class="ipc">${esc(c.u)}</td><td style="color:var(--accent);font-family:var(--mono)">${esc(c.p)}</td><td class="n1" style="text-align:right">${c.n}</td></tr>`).join("");
+}
+
+/* ---- attackers table ---- */
+function matchFilter(a){
+  if(aFilter==="all")return true;
+  if(aFilter==="anom")return a.is_anomaly;
+  return clusterClass(a.cluster_name)===aFilter;
+}
+function renderAttackers(){
+  const q=$("#asearch").value.trim().toLowerCase();
+  let rows=D.attackers.filter(a=>matchFilter(a)&&(!q||[a.src_ip,a.country,a.isp,a.cluster_name].some(v=>String(v||"").toLowerCase().includes(q))));
+  const k=aSort.k,dir=aSort.dir;
+  rows.sort((x,y)=>{let a=x[k],b=y[k],c;
+    if(typeof a==="number"||typeof b==="number"){c=(a||0)-(b||0);}
+    else{a=String(a||"");b=String(b||"");c=a<b?-1:a>b?1:0;}
+    return c*dir;});
+  const tb=$("#abody");
+  tb.innerHTML=rows.map(a=>{const cc=clusterClass(a.cluster_name);
+    return `<tr data-ip="${esc(a.src_ip)}">
+      <td class="ipc">${esc(a.src_ip)}</td>
+      <td>${esc(a.country||"—")}</td>
+      <td class="sc ${(a.abuse_score>=75)?"hi":""}">${a.abuse_score==null?"—":a.abuse_score}</td>
+      <td class="sc">${num(a.n_connections)}</td>
+      <td class="sc">${num(a.n_logins)}</td>
+      <td class="sc">${num(a.n_commands)}</td>
+      <td><span class="badge b-${cc}">${cc==="flood"?"brute-force":cc==="inter"?"interactive":"scanner"}</span></td>
+      <td class="sc">${a.anomaly_score==null?"—":Number(a.anomaly_score).toFixed(2)} ${a.is_anomaly?'<span class="badge b-anom">anom</span>':""}</td>
+    </tr>`;}).join("");
+  $("#aempty").hidden=rows.length>0;
+  $$("#abody tr").forEach(tr=>tr.addEventListener("click",()=>openDrawer(tr.dataset.ip)));
+  $$("#atable th").forEach(th=>{const a=th.querySelector(".ar");if(a)a.textContent=th.dataset.s===aSort.k?(aSort.dir<0?"▼":"▲"):"";});
+}
+
+/* ---- alerts ---- */
+function renderAlerts(){
+  const q=$("#lsearch").value.trim().toLowerCase();
+  let rows=(D.alerts||[]).filter(a=>(lFilter==="all"||a.sev===lFilter)&&(!q||[a.ip,a.detail,a.rule,a.mitre].some(v=>String(v||"").toLowerCase().includes(q))));
+  $("#lfeed").innerHTML=rows.map(a=>`<div class="al"><div class="sev ${esc(a.sev)}"></div>
+    <div class="ti" data-ip="${esc(a.ip)}" style="cursor:pointer">${esc((a.rule||"").replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase()))}</div>
+    <div class="tm">${esc(a.time)}</div>
+    <div class="de">${esc(a.ip)} · ${esc(a.detail)} <span class="tag">${esc(a.mitre)}</span></div></div>`).join("");
+  $("#lempty").hidden=rows.length>0;
+  $$("#lfeed .ti").forEach(t=>t.addEventListener("click",()=>openDrawer(t.dataset.ip)));
+}
+
+/* ---- drawer ---- */
+function openDrawer(ip){
+  const a=D.attackers.find(x=>x.src_ip===ip); if(!a)return;
+  const cc=clusterClass(a.cluster_name);
+  $("#dbody").innerHTML=`<h3>${esc(a.src_ip)}</h3>
+    <div style="color:var(--muted);font-size:.82rem">${esc(a.country||"Unknown")}${a.city?" · "+esc(a.city):""}</div>
+    <div style="margin-top:12px"><span class="badge b-${cc}">${cc==="flood"?"brute-forcer":cc==="inter"?"interactive intruder":"scanner"}</span>${a.is_anomaly?' <span class="badge b-anom">ML anomaly</span>':""}</div>
+    <dl class="kv">
+      <dt>AbuseIPDB</dt><dd class="${a.abuse_score>=75?'sc hi':''}">${a.abuse_score==null?"—":a.abuse_score+" / 100"}</dd>
+      <dt>Total reports</dt><dd>${num(a.total_reports)}</dd>
+      <dt>ISP</dt><dd>${esc(a.isp||"—")}</dd>
+      <dt>Connections</dt><dd>${num(a.n_connections)}</dd>
+      <dt>Login attempts</dt><dd>${num(a.n_logins)}</dd>
+      <dt>Commands run</dt><dd>${num(a.n_commands)}</dd>
+      <dt>Sessions</dt><dd>${num(a.n_sessions)}</dd>
+      <dt>Anomaly score</dt><dd>${a.anomaly_score==null?"—":Number(a.anomaly_score).toFixed(3)}</dd>
+      <dt>Cluster</dt><dd>${esc(a.cluster_name||"—")}</dd>
+    </dl>`;
+  $("#drawer").classList.add("open"); $("#scrim").classList.add("open");
+}
+function closeDrawer(){$("#drawer").classList.remove("open");$("#scrim").classList.remove("open");}
+$("#dclose").addEventListener("click",closeDrawer);
+$("#scrim").addEventListener("click",closeDrawer);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDrawer();});
+
+/* ---- tab + filter wiring ---- */
+$$("#tabs .tab").forEach(t=>t.addEventListener("click",()=>{
+  $$("#tabs .tab").forEach(x=>x.classList.remove("on"));t.classList.add("on");
+  ["overview","attackers","alerts"].forEach(id=>$("#"+id).hidden=id!==t.dataset.tab);
+}));
+$$("#attackers .chip").forEach(c=>c.addEventListener("click",()=>{
+  $$("#attackers .chip").forEach(x=>x.classList.remove("on"));c.classList.add("on");aFilter=c.dataset.f;renderAttackers();}));
+$$("#alerts .chip").forEach(c=>c.addEventListener("click",()=>{
+  $$("#alerts .chip").forEach(x=>x.classList.remove("on"));c.classList.add("on");lFilter=c.dataset.lf;renderAlerts();}));
+$("#asearch").addEventListener("input",renderAttackers);
+$("#lsearch").addEventListener("input",renderAlerts);
+$$("#atable th").forEach(th=>th.addEventListener("click",()=>{
+  const k=th.dataset.s; if(aSort.k===k)aSort.dir*=-1; else{aSort.k=k;aSort.dir=-1;} renderAttackers();}));
+</script>
+</body>
+</html>
