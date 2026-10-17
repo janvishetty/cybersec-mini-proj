@@ -31,3 +31,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+!fsia_cyber/data/
+!fsia_cyber/data/*
+!fsia_cyber/output/incidents.json
+!fsia_cyber/output/alerts.csv
